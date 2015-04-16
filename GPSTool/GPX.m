@@ -58,7 +58,7 @@
             
             NSDateFormatter *rfc3339DateFormatter = [[NSDateFormatter alloc] init];
             [rfc3339DateFormatter setDateFormat:@"yyyy'-'MM'-'dd'T'HH':'mm':'ss'Z'"];
-            [rfc3339DateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:8*60*60]];
+            [rfc3339DateFormatter setTimeZone:[NSTimeZone timeZoneForSecondsFromGMT:0]];
             NSXMLElement *time = [NSXMLNode elementWithName:@"time" stringValue:[rfc3339DateFormatter stringFromDate:[nmea.gpsinfos[i] D]]];
             [trkpt addChild:time];
         }

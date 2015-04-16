@@ -12,6 +12,7 @@
 
 @property (strong, nonatomic) NSMutableArray *gpsinfos;
 
-+ (instancetype)nmea0183WithURL: (NSURL *)url;
++ (instancetype)nmea0183WithURL:(NSURL *)url;
++ (instancetype)nmea0183WithURLs:(NSArray *)urls;
 
 @end

@@ -12,6 +12,31 @@
 
 @implementation NMEA0183
 
++ (instancetype)nmea0183WithURLs:(NSArray *)urls {
+    NMEA0183 *nmea = [[NMEA0183 alloc] init];
+    if (nmea) {
+        nmea.gpsinfos = [[NSMutableArray alloc] init];
+        for (int i = 0; i < urls.count; i++) {
+            NSString *fileString = [NSString stringWithContentsOfURL:urls[i] encoding:NSUTF8StringEncoding error:nil];
+            if (!fileString)
+                continue;
+            NSArray *nmeaLines = [fileString componentsSeparatedByString:@"\r\n"];
+            NSRange range = [nmeaLines[0] rangeOfString:@"CanonGPS"];
+            if (range.location == NSNotFound || range.location != 1) {
+                NSLog(@"Error file format: %@", [urls[i] absoluteString]);
+                continue;
+            }
+            for (int j = 1; j < nmeaLines.count-2; j+=2) {
+                GPSInfo *gpsInfo = [GPSInfo gpsInfoWithGPGGA:nmeaLines[j] AndGPRMC:nmeaLines[j+1]];
+                if (gpsInfo)
+                    [nmea.gpsinfos addObject:gpsInfo];
+            }
+        }
+    }
+    
+    return nmea;
+}
+
 + (instancetype)nmea0183WithURL:(NSURL *)url {
     NSString *fileString = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:nil];
     if (!fileString)
@@ -19,38 +44,20 @@
     
     NMEA0183 *nmea = [[NMEA0183 alloc] init];
     if (nmea) {
-        const char *string = fileString.UTF8String;
-        char szBuf[128];
-        memset(szBuf, 0, sizeof(szBuf));
-        // 检查文件第一行判断是否为CanonGPS生成
-        char *pos = strstr(string, "\r\n");
-        memcpy(szBuf, string, pos-string);
-        if (strncmp(szBuf, "@CanonGPS", strlen("@CanonGPS")) != 0) {
-            NSLog(@"Error file format");
+        nmea.gpsinfos = [[NSMutableArray alloc] init];
+        NSString *fileString = [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:nil];
+        if (!fileString)
+            return nil;
+        NSArray *nmeaLines = [fileString componentsSeparatedByString:@"\r\n"];
+        NSRange range = [nmeaLines[0] rangeOfString:@"CanonGPS"];
+        if (range.location == NSNotFound || range.location != 1) {
+            NSLog(@"Error file format: %@", [url absoluteString]);
             return nil;
         }
-        
-        nmea.gpsinfos = [[NSMutableArray alloc] init];
-        
-        pos = pos + 2;
-        char *next = pos;
-        // 解析GPGPA和GPRMC数据，并保存到GPSInfo中
-        while ((next = strstr(pos, "\r\n"))) {
-            memset(szBuf, 0, sizeof(szBuf));
-            memcpy(szBuf, pos, next-pos);
-            NSString *GPGGA = [NSString stringWithUTF8String:szBuf];
-            pos = next+2;
-            next = strstr(pos, "\r\n");
-            memset(szBuf, 0, sizeof(szBuf));
-            memcpy(szBuf, pos, next-pos);
-            NSString *GPRMC = [NSString stringWithUTF8String:szBuf];
-            pos = next+2;
-            GPSInfo *gpsinfo = [GPSInfo gpsInfoWithGPGGA:GPGGA AndGPRMC:GPRMC];
-            if (!gpsinfo) {
-                NSLog(@"Error GPGPA/GPRMC data");
-                continue;
-            }
-            [nmea.gpsinfos addObject:gpsinfo];
+        for (int i = 1; i < nmeaLines.count-2; i+=2) {
+            GPSInfo *gpsInfo = [GPSInfo gpsInfoWithGPGGA:nmeaLines[i] AndGPRMC:nmeaLines[i+1]];
+            if (gpsInfo)
+                [nmea.gpsinfos addObject:gpsInfo];
         }
     }
     

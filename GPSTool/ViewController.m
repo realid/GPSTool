@@ -65,7 +65,23 @@
     }
     
 }
-     
+
+- (IBAction)saveOneFile:(id)sender {
+    NSSavePanel *panel = [NSSavePanel savePanel];
+    [panel setCanCreateDirectories:YES];
+    panel.showsTagField = NO;
+    if ([panel runModal] == NSFileHandlingPanelCancelButton)
+        return;
+    NSString *filename = [[panel.URL lastPathComponent] stringByAppendingString:@".gpx"];
+    [self.saveGpxFiled setStringValue:filename];
+    NMEA0183 *nmea = [NMEA0183 nmea0183WithURLs:self.fileURLs];
+    if (!nmea)
+        return;
+    GPX *gpx = [GPX gpxWithNMEA0183:nmea];
+    if (!gpx)
+        return;
+    [gpx saveToURL:panel.URL];
+}
 
 - (void)setRepresentedObject:(id)representedObject {
     [super setRepresentedObject:representedObject];
